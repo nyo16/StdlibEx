@@ -7,10 +7,10 @@ defmodule StdlibEx.Queue do
     defexception message: "You didn't provide a queue struct"
   end
 
-  defstruct queue: :queue.new()
+  defstruct queue: :queue.new(), len: 0
 
-  @opaque t(type) :: %__MODULE__{:queue => :queue.queue(type)}
-  @opaque t() :: %__MODULE__{:queue => :queue.queue()}
+  @opaque t(type) :: %__MODULE__{:queue => :queue.queue(type), :len => 0}
+  @opaque t() :: %__MODULE__{:queue => :queue.queue(), :len => 0}
 
   @doc """
   Creates a new queue (empty)
@@ -29,7 +29,8 @@ defmodule StdlibEx.Queue do
   def new(), do: %__MODULE__{}
 
   def new(from..n) do
-    %__MODULE__{queue: :queue.from_list(Enum.to_list(from..n))}
+    lst = Enum.to_list(from..n)
+    %__MODULE__{queue: :queue.from_list(lst), len: length(lst)}
   end
 
   @spec new([any]) :: StdlibEx.Queue.t()
@@ -42,8 +43,8 @@ defmodule StdlibEx.Queue do
       [:a, :b]
   """
   @spec push(StdlibEx.Queue.t(), any) :: StdlibEx.Queue.t()
-  def push(%__MODULE__{queue: queue}, term) do
-    %__MODULE__{queue: :queue.in(term, queue)}
+  def push(%__MODULE__{queue: queue, len: len}, term) do
+    %__MODULE__{queue: :queue.in(term, queue), len: len + 1}
   end
 
   @doc """
@@ -53,38 +54,38 @@ defmodule StdlibEx.Queue do
       [:b, :a]
   """
   @spec push_rear(StdlibEx.Queue.t(), any) :: StdlibEx.Queue.t()
-  def push_rear(%__MODULE__{queue: queue}, term) do
-    %__MODULE__{queue: :queue.in_r(term, queue)}
+  def push_rear(%__MODULE__{queue: queue, len: len}, term) do
+    %__MODULE__{queue: :queue.in_r(term, queue), len: len + 1}
   end
 
   @spec pop(StdlibEx.Queue.t()) :: {any, StdlibEx.Queue.t()}
-  def pop(%__MODULE__{queue: queue}) do
+  def pop(%__MODULE__{queue: queue, len: len}) do
     case :queue.out(queue) do
-      {{:value, v}, new_queue} -> {v, %__MODULE__{queue: new_queue}}
-      {:empty, new_queue} -> {nil, %__MODULE__{queue: new_queue}}
+      {{:value, head}, new_queue} -> {head, %__MODULE__{queue: new_queue, len: len - 1}}
+      {:empty, new_queue} -> {nil, %__MODULE__{queue: new_queue}, len: 0}
     end
   end
 
   @spec pop!(StdlibEx.Queue.t()) :: {any, StdlibEx.Queue.t()}
-  def pop!(%__MODULE__{queue: queue}) do
+  def pop!(%__MODULE__{queue: queue, len: len}) do
     case :queue.out(queue) do
-      {{:value, v}, new_queue} -> {v, %__MODULE__{queue: new_queue}}
+      {{:value, head}, new_queue} -> {head, %__MODULE__{queue: new_queue, len: len - 1}}
       {:empty, _new_queue} -> raise EmptyQueueException
     end
   end
 
   @spec pop_rear(StdlibEx.Queue.t()) :: {any, StdlibEx.Queue.t()}
-  def pop_rear(%__MODULE__{queue: q}) do
+  def pop_rear(%__MODULE__{queue: q, len: len}) do
     case :queue.out_r(q) do
-      {{:value, v}, new_queue} -> {v, %__MODULE__{queue: new_queue}}
-      {:empty, new_queue} -> {nil, %__MODULE__{queue: new_queue}}
+      {{:value, v}, new_queue} -> {v, %__MODULE__{queue: new_queue, len: len - 1}}
+      {:empty, new_queue} -> {nil, %__MODULE__{queue: new_queue, len: 0}}
     end
   end
 
   @spec pop_rear!(StdlibEx.Queue.t()) :: {any, StdlibEx.Queue.t()}
-  def pop_rear!(%__MODULE__{queue: q}) do
+  def pop_rear!(%__MODULE__{queue: q, len: len}) do
     case :queue.out_r(q) do
-      {{:value, v}, new_queue} -> {v, %__MODULE__{queue: new_queue}}
+      {{:value, v}, new_queue} -> {v, %__MODULE__{queue: new_queue, len: len - 1}}
       {:empty, _q} -> raise EmptyQueueException
     end
   end
@@ -97,14 +98,20 @@ defmodule StdlibEx.Queue do
   @spec split(StdlibEx.Queue.t(), non_neg_integer) :: {StdlibEx.Queue.t(), StdlibEx.Queue.t()}
   def split(%__MODULE__{queue: queue}, n) do
     with {queue1, queue2} <- :queue.split(n, queue) do
-      {%__MODULE__{queue: queue1}, %__MODULE__{queue: queue2}}
+      {
+        %__MODULE__{queue: queue1, len: :queue.len(queue1)},
+        %__MODULE__{queue: queue2, len: :queue.len(queue2)}
+      }
     end
   end
 
   @spec join(StdlibEx.Queue.t(), StdlibEx.Queue.t()) :: StdlibEx.Queue.t()
-  def join(%__MODULE__{queue: queue1}, %__MODULE__{queue: queue2}) do
-    %__MODULE__{queue: :queue.join(queue1, queue2)}
+  def join(%__MODULE__{queue: queue1, len: len1}, %__MODULE__{queue: queue2, len: len2}) do
+    %__MODULE__{queue: :queue.join(queue1, queue2), len: len1 + len2}
   end
+
+  def len(%__MODULE__{queue: _queue, len: len}), do: len
+  def size(%__MODULE__{queue: queue}), do: :queue.len(queue)
 
   @spec first(StdlibEx.Queue.t()) :: any
   def first(%__MODULE__{queue: queue}) do
@@ -121,4 +128,14 @@ defmodule StdlibEx.Queue do
       :empty -> nil
     end
   end
+
+  def member(%__MODULE__{queue: queue, len: _len}, term) do
+    :queue.member(term, queue)
+  end
+
+  def filter(%__MODULE__{queue: queue, len: len}, func) when len > 0 do
+    :queue.filter(func, queue)
+  end
+
+  def to_binary(%__MODULE__{} = term), do: :erlang.term_to_binary(term)
 end

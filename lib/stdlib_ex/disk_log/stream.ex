@@ -1,11 +1,11 @@
 defmodule StdlibEx.DiskLog.Stream do
   alias StdlibEx.DiskLog
 
-  def create(%StdlibEx.DiskLog{} = log) do
+  def create(%DiskLog{} = log) do
     Stream.resource(fn -> log end, &iterate/1, fn _ -> :ok end)
   end
 
-  defp iterate(%StdlibEx.DiskLog{} = log) do
+  defp iterate(%DiskLog{} = log) do
     case DiskLog.read_chunk(log) do
       :eof -> {:halt, []}
       {maybe_next, results} -> {results, {maybe_next, log}}

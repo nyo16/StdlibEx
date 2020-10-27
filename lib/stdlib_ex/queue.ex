@@ -95,8 +95,10 @@ defmodule StdlibEx.Queue do
     %__MODULE__{queue: :queue.reverse(queue)}
   end
 
+  def split(%__MODULE__{queue: _queue, len: 0}, _), do: :empty
+
   @spec split(StdlibEx.Queue.t(), non_neg_integer) :: {StdlibEx.Queue.t(), StdlibEx.Queue.t()}
-  def split(%__MODULE__{queue: queue}, n) do
+  def split(%__MODULE__{queue: queue, len: len}, n) when n <= len do
     with {queue1, queue2} <- :queue.split(n, queue) do
       {
         %__MODULE__{queue: queue1, len: :queue.len(queue1)},
@@ -104,6 +106,9 @@ defmodule StdlibEx.Queue do
       }
     end
   end
+
+  def split(%__MODULE__{queue: _queue, len: len}, n),
+    do: {:error, "Your split num:#{n} was higher from queue size:#{len}"}
 
   @spec join(StdlibEx.Queue.t(), StdlibEx.Queue.t()) :: StdlibEx.Queue.t()
   def join(%__MODULE__{queue: queue1, len: len1}, %__MODULE__{queue: queue2, len: len2}) do

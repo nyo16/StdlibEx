@@ -9,8 +9,8 @@ defmodule StdlibEx.Queue do
 
   defstruct queue: :queue.new(), len: 0
 
-  @opaque t(type) :: %__MODULE__{:queue => :queue.queue(type), :len => 0}
-  @opaque t() :: %__MODULE__{:queue => :queue.queue(), :len => 0}
+  @type t(type) :: %__MODULE__{:queue => :queue.queue(type), :len => 0}
+  @type t() :: %__MODULE__{:queue => :queue.queue(), :len => 0}
 
   @doc """
   Creates a new queue (empty)
@@ -29,12 +29,12 @@ defmodule StdlibEx.Queue do
   def new(), do: %__MODULE__{}
 
   def new(from..n) do
-    lst = Enum.to_list(from..n)
-    %__MODULE__{queue: :queue.from_list(lst), len: length(lst)}
+    list = Enum.to_list(from..n)
+    %__MODULE__{queue: :queue.from_list(lst), len: length(list)}
   end
 
   @spec new([any]) :: StdlibEx.Queue.t()
-  def new(list) when is_list(list), do: %__MODULE__{queue: :queue.from_list(list)}
+  def new(list) when is_list(list), do: %__MODULE__{queue: :queue.from_list(list), len: length(list)}
 
   @doc """
   Add an element to the queue
@@ -138,7 +138,7 @@ defmodule StdlibEx.Queue do
     :queue.member(term, queue)
   end
 
-  def filter(%__MODULE__{queue: queue, len: len}, func) when len > 0 do
+  def filter(%__MODULE__{queue: queue, len: len}, func) when len > 0 and is_function(func) do
     :queue.filter(func, queue)
   end
 

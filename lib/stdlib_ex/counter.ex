@@ -4,7 +4,7 @@ defmodule StdlibEx.Counter do
   This module is an elixir interface wrapper around erlang's :counters module
   """
 
-  defstruct ref: nil, size: 1
+  defstruct ref: nil, size: 1, key_mapping: %{}
 
   @opaque t(type) :: %__MODULE__{:ref => :counters.counters(type)}
   @opaque t() :: %__MODULE__{:ref => :counters.counters()}

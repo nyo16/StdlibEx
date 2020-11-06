@@ -4,7 +4,7 @@ defmodule StdlibEx.Queue do
 
   @type t() :: %Queue{}
 
-  defstruct data: :queue.new(), length: 0
+  defstruct data: :queue.new(), length: 0, bloom_filter: nil
 
   @doc """
   Creates a new queue (empty)
@@ -20,9 +20,30 @@ defmodule StdlibEx.Queue do
   Creates a new queue from a generator/range or list
   """
   @spec new([any] | Range.t()) :: StdlibEx.Queue.t()
-  def new(from..n) do
+  def new(from..n) when is_integer(from) and is_integer(n) do
     list = Enum.to_list(from..n)
-    %Queue{data: :queue.from_list(list), length: length(list)}
+    new(list)
+  end
+
+  def new_with_bloom() do
+    %Queue{bloom_filter: Bloomex.scalable(1000, 0.1, 0.1, 2)}
+  end
+
+  def new_with_bloom(list) when is_list(list) do
+    bf =
+      Enum.reduce(list, Bloomex.scalable(100_000, 0.1, 0.1, 100), fn x, bf ->
+        Bloomex.add(bf, x)
+      end)
+
+    %Queue{
+      data: from_list(list),
+      length: length(list),
+      bloom_filter: bf
+    }
+  end
+
+  def new_with_bloom(from..n) when is_integer(from) and is_integer(n) do
+    new_with_bloom(Enum.to_list(from..n))
   end
 
   @doc """

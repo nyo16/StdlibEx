@@ -7,8 +7,9 @@ defmodule StdlibEx.Queue.Stream do
 
   defp iterate({queue, chunk_num}) do
     case Queue.slice(queue, chunk_num) do
-      {q1, rest} -> {:queue.to_list(q1.data), {rest, chunk_num}}
       :empty -> {:halt, []}
+      {q1, q2} -> {:queue.to_list(q1.data), {q2, chunk_num}}
+      %Queue{} = queue -> {:halt, :queue.to_list(queue.data)}
     end
   end
 end

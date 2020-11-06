@@ -139,6 +139,7 @@ defmodule StdlibEx.Queue do
     filter(fun, queue)
   end
 
+  @spec slice(StdlibEx.Queue.t()) :: :empty
   def slice(%Queue{length: 0}), do: :empty
 
   @spec slice(StdlibEx.Queue.t(), non_neg_integer) ::
